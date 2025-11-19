@@ -294,6 +294,25 @@
                     </execution>
                 </executions>
             </plugin>
+              <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>1.22.0</version>
+                <configuration>
+                    <targetClasses>
+                        <param>com.graphhopper.*</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>com.graphhopper.*</param>
+                    </targetTests>
+
+                    <!-- IMPORTANT : éviter le bug {argLine} -->
+                    <useClasspathFile>true</useClasspathFile>
+                    <skipFailingTests>true</skipFailingTests>
+                    <failWhenNoMutations>false</failWhenNoMutations>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 
