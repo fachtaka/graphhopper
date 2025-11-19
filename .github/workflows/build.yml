@@ -34,7 +34,7 @@ jobs:
       # 4. Run PIT Mutation Testing (core module)
       # ----------------------------
       - name: Run PIT Mutation Testing (core)
-        run: mvn clean install -DskipTests && mvn -pl core org.pitest:pitest-maven:mutationCoverage -DargLine=""
+        run: mvn clean install -DskipTests && mvn -pl core org.pitest:pitest-maven:mutationCoverage
 
       # ----------------------------
       # 5. Extract mutation score
