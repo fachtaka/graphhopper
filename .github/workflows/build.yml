@@ -27,7 +27,7 @@ jobs:
 
       # --- Mutation Testing ---
       - name: Run Pitest Mutation Testing
-        run: mvn -B org.pitest:pitest-maven:mutationCoverage -DargLine=""
+        run: mvn -pl core -am -B org.pitest:pitest-maven:mutationCoverage -DargLine=""
 
       - name: Extract mutation score
         id: mutation
