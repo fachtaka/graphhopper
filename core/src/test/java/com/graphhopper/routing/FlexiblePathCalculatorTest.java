@@ -14,35 +14,30 @@ import static org.mockito.Mockito.*;
 
 public class FlexiblePathCalculatorTest {
 
+    private BaseGraph newGraph() {
+        // Dans ta version : Builder exige un int
+        return new BaseGraph.Builder(1).create();
+    }
+
     @Test
     public void testCalcPathsReturnsNonEmptyList() {
-        // BaseGraph requis par QueryGraph
-        BaseGraph base = new BaseGraph.Builder().create();
+        BaseGraph base = newGraph();
 
         QueryGraph queryGraph = QueryGraph.create(base, Collections.emptyList());
 
-        // Mock factory + algo
         RoutingAlgorithmFactory factory = mock(RoutingAlgorithmFactory.class);
         RoutingAlgorithm algo = mock(RoutingAlgorithm.class);
         when(factory.createAlgo(any(), any(), any())).thenReturn(algo);
 
-        // Mock weighting
         Weighting weighting = mock(Weighting.class);
-
-        // AlgorithmOptions dans ta version
         AlgorithmOptions opts = new AlgorithmOptions();
 
-        // Mock d'un Path
         Path mockPath = mock(Path.class);
         when(algo.calcPaths(anyInt(), anyInt()))
                 .thenReturn(Collections.singletonList(mockPath));
 
-        // EdgeRestrictions : constructeur avec ANY_EDGE
-        EdgeRestrictions restrictions = new EdgeRestrictions(
-                EdgeIterator.ANY_EDGE,
-                EdgeIterator.ANY_EDGE,
-                Collections.emptyList()
-        );
+        // EdgeRestrictions sans arguments
+        EdgeRestrictions restrictions = new EdgeRestrictions();
 
         FlexiblePathCalculator calc =
                 new FlexiblePathCalculator(queryGraph, factory, weighting, opts);
@@ -55,7 +50,8 @@ public class FlexiblePathCalculatorTest {
 
     @Test
     public void testGetVisitedNodes() {
-        BaseGraph base = new BaseGraph.Builder().create();
+        BaseGraph base = newGraph();
+
         QueryGraph qg = QueryGraph.create(base, Collections.emptyList());
 
         RoutingAlgorithm algo = mock(RoutingAlgorithm.class);
@@ -66,11 +62,7 @@ public class FlexiblePathCalculatorTest {
 
         AlgorithmOptions opts = new AlgorithmOptions();
 
-        EdgeRestrictions restrictions = new EdgeRestrictions(
-                EdgeIterator.ANY_EDGE,
-                EdgeIterator.ANY_EDGE,
-                Collections.emptyList()
-        );
+        EdgeRestrictions restrictions = new EdgeRestrictions();
 
         FlexiblePathCalculator calc =
                 new FlexiblePathCalculator(qg, factory, mock(Weighting.class), opts);
