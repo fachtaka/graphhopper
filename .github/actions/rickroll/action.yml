@@ -1,9 +1,13 @@
 name: Rickroll
 description: Rickroll on failure
+
 runs:
   using: "composite"
   steps:
-    - run: |
+    - name: Display Rickroll message
+      shell: bash
+      run: |
         echo " Never gonna give you up "
+        echo " Never gonna let you down "
         echo "https://youtu.be/dQw4w9WgXcQ"
 

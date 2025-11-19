@@ -32,13 +32,9 @@ jobs:
 
       # ----------------------------
       # 4. Run PIT Mutation Testing (core module)
-      # IMPORTANT : -DargLine="" correction spéciale Graphhopper
       # ----------------------------
       - name: Run PIT Mutation Testing (core)
-        run: |
-          echo " Launching PIT mutation analysis..."
-          mvn -q -DskipTests install
-          mvn -q -pl core org.pitest:pitest-maven:mutationCoverage -DargLine=""
+        run: mvn clean install -DskipTests && mvn -pl core org.pitest:pitest-maven:mutationCoverage -DargLine=""
 
       # ----------------------------
       # 5. Extract mutation score
