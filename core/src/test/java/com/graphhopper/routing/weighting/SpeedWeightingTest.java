@@ -1,72 +1,99 @@
 package com.graphhopper.routing.weighting;
 
-import com.graphhopper.routing.ev.BooleanEncodedValue;
 import com.graphhopper.routing.ev.DecimalEncodedValue;
-import com.graphhopper.routing.ev.Speed;
 import com.graphhopper.util.EdgeIteratorState;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for SpeedWeighting using Mockito to isolate dependencies.
- */
 public class SpeedWeightingTest {
 
-    private DecimalEncodedValue speedEnc;
-    private BooleanEncodedValue accessEnc;
-    private EdgeIteratorState edge;
-    private SpeedWeighting weighting;
+    @Test
+    public void testCalcEdgeWeightForward() {
+        DecimalEncodedValue speedEnc = mock(DecimalEncodedValue.class);
+        EdgeIteratorState edge = mock(EdgeIteratorState.class);
 
-    @BeforeEach
-    public void setup() {
-        speedEnc = mock(DecimalEncodedValue.class);
-        accessEnc = mock(BooleanEncodedValue.class);
-        edge = mock(EdgeIteratorState.class);
+        when(edge.get(speedEnc)).thenReturn(60.0);
+        when(edge.getDistance()).thenReturn(120.0);
 
-        // Simule access autorisé
-        when(accessEnc.getBool(edge, false)).thenReturn(true);
+        SpeedWeighting weighting = new SpeedWeighting(speedEnc);
 
-        // SpeedWeighting a besoin d’un *Speed*, mocké proprement :
-        Speed speedEV = mock(Speed.class);
-        when(speedEV.getDecimal(false)).thenReturn(speedEnc);
-        when(speedEV.getAccess()).thenReturn(accessEnc);
+        double weight = weighting.calcEdgeWeight(edge, false);
 
-        // construction de SpeedWeighting
-        weighting = new SpeedWeighting(speedEV, 1);  // 1 = default minimum speed
+        // 120m / 60kmh = 120 / 60 = 2s => 2 seconds = 2 units (SpeedWeighting returns distance/speed)
+        assertEquals(120.0 / 60.0, weight, 1e-9);
     }
 
     @Test
-    public void testWeightFormula() {
-        // speed = 50 km/h
-        when(speedEnc.getDecimal(edge, false)).thenReturn(50.0);
+    public void testCalcEdgeWeightReverse() {
+        DecimalEncodedValue speedEnc = mock(DecimalEncodedValue.class);
+        EdgeIteratorState edge = mock(EdgeIteratorState.class);
 
-        double w = weighting.calcEdgeWeight(edge, false);
+        when(edge.getReverse(speedEnc)).thenReturn(30.0);
+        when(edge.getDistance()).thenReturn(90.0);
 
-        // SpeedWeighting = distance(=1m) / speed
-        assertEquals(1.0 / 50.0, w, 1e-9);
+        SpeedWeighting weighting = new SpeedWeighting(speedEnc);
+
+        double weight = weighting.calcEdgeWeight(edge, true);
+
+        assertEquals(90.0 / 30.0, weight, 1e-9);
     }
 
     @Test
-    public void testZeroSpeedMeansInfiniteWeight() {
-        when(speedEnc.getDecimal(edge, false)).thenReturn(0.0);
+    public void testZeroSpeedGivesInfiniteWeight() {
+        DecimalEncodedValue speedEnc = mock(DecimalEncodedValue.class);
+        EdgeIteratorState edge = mock(EdgeIteratorState.class);
 
-        double w = weighting.calcEdgeWeight(edge, false);
+        when(edge.get(speedEnc)).thenReturn(0.0);
+        when(edge.getDistance()).thenReturn(100.0);
 
-        assertTrue(Double.isInfinite(w));
+        SpeedWeighting weighting = new SpeedWeighting(speedEnc);
+
+        assertTrue(Double.isInfinite(weighting.calcEdgeWeight(edge, false)));
     }
 
     @Test
-    public void testEdgeNotAccessible() {
-        when(accessEnc.getBool(edge, false)).thenReturn(false);
+    public void testCalcEdgeMillis() {
+        DecimalEncodedValue speedEnc = mock(DecimalEncodedValue.class);
+        EdgeIteratorState edge = mock(EdgeIteratorState.class);
 
-        double w = weighting.calcEdgeWeight(edge, false);
+        when(edge.get(speedEnc)).thenReturn(50.0);
+        when(edge.getDistance()).thenReturn(100.0);
 
-        assertTrue(Double.isInfinite(w), "Weight must be infinite when access is denied");
+        SpeedWeighting weighting = new SpeedWeighting(speedEnc);
+
+        long millis = weighting.calcEdgeMillis(edge, false);
+
+        // weight = 100 / 50 = 2 → 2s → 2000ms
+        assertEquals(2000, millis);
+    }
+
+    @Test
+    public void testTurnCostDelegation() {
+        DecimalEncodedValue speedEnc = mock(DecimalEncodedValue.class);
+        TurnCostProvider provider = mock(TurnCostProvider.class);
+
+        when(provider.calcTurnWeight(1, 2, 3)).thenReturn(7.5);
+        when(provider.calcTurnMillis(1, 2, 3)).thenReturn(7500L);
+
+        SpeedWeighting weighting = new SpeedWeighting(speedEnc, provider);
+
+        assertEquals(7.5, weighting.calcTurnWeight(1, 2, 3));
+        assertEquals(7500L, weighting.calcTurnMillis(1, 2, 3));
+    }
+
+    @Test
+    public void testHasTurnCosts() {
+        DecimalEncodedValue speedEnc = mock(DecimalEncodedValue.class);
+
+        TurnCostProvider provider = mock(TurnCostProvider.class);
+        SpeedWeighting w1 = new SpeedWeighting(speedEnc, provider);
+
+        SpeedWeighting w2 = new SpeedWeighting(speedEnc);
+
+        assertTrue(w1.hasTurnCosts());
+        assertFalse(w2.hasTurnCosts());
     }
 }
 
