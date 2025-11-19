@@ -25,22 +25,23 @@ jobs:
           distribution: temurin
 
       # ----------------------------
-      # 3. Build & Test
+      # 3. Build & run normal tests
       # ----------------------------
       - name: Build project & run tests
         run: mvn -B -q clean test
 
       # ----------------------------
-      # 4. Run PIT Mutation Testing
+      # 4. Run PIT Mutation Testing (core module)
+      # IMPORTANT : -DargLine="" correction spéciale Graphhopper
       # ----------------------------
       - name: Run PIT Mutation Testing (core)
         run: |
-          echo "Launching PIT mutation analysis..."
+          echo " Launching PIT mutation analysis..."
           mvn -q -DskipTests install
-          mvn -q -pl core org.pitest:pitest-maven:mutationCoverage
+          mvn -q -pl core org.pitest:pitest-maven:mutationCoverage -DargLine=""
 
       # ----------------------------
-      # 5. Extract mutation score from PIT report
+      # 5. Extract mutation score
       # ----------------------------
       - name: Extract mutation score
         id: pit
@@ -48,17 +49,17 @@ jobs:
           REPORT=$(find . -type f -path "*/pit-reports/*/summary.xml" | head -n 1)
 
           if [ -z "$REPORT" ]; then
-            echo "No PIT summary.xml found. Score set to 0."
+            echo "️ No PIT summary.xml found. Setting score to 0."
             CURR=0
           else
             CURR=$(grep -oPm1 "(?<=<score>)[^<]+" "$REPORT")
           fi
 
           echo "current_score=$CURR" >> "$GITHUB_OUTPUT"
-          echo " Mutation score found: $CURR %"
+          echo " Current mutation score: $CURR %"
 
       # ----------------------------
-      # 6. Load previous score (custom storage)
+      # 6. Retrieve previous score
       # ----------------------------
       - name: Retrieve previous mutation score
         id: old
@@ -73,7 +74,7 @@ jobs:
           echo " Previous mutation score: $PREV %"
 
       # ----------------------------
-      # 7. Compare scores & enforce threshold
+      # 7. Compare scores + threshold enforcement
       # ----------------------------
       - name: Compare mutation scores
         id: comparison
@@ -82,37 +83,38 @@ jobs:
           PREV=${{ steps.old.outputs.previous_score }}
           MIN_THRESHOLD=60
 
-          echo " Checking mutation testing quality..."
-          echo " - Current score:  $CUR %"
-          echo " - Previous score: $PREV %"
-          echo " - Minimum allowed: $MIN_THRESHOLD %"
+          echo " Comparing mutation scores..."
+          echo "  - Current:  $CUR %"
+          echo "  - Previous: $PREV %"
+          echo "  - Threshold: $MIN_THRESHOLD %"
 
-          # Fail if new score < threshold
+          # Fail if below threshold
           if [ "$CUR" -lt "$MIN_THRESHOLD" ]; then
-            echo " Mutation score is below threshold ($CUR < $MIN_THRESHOLD)"
+            echo " Score below required threshold ($CUR < $MIN_THRESHOLD)"
             exit 1
           fi
 
-          # Fail if score decreased
+          # Fail if score regressed
           if [ "$CUR" -lt "$PREV" ]; then
-            echo " Mutation score regressed! ($CUR < $PREV)"
+            echo " Mutation score regressed ($CUR < $PREV)"
             exit 1
           fi
 
-          echo " Mutation score is acceptable."
+          echo " Mutation score OK."
 
       # ----------------------------
-      # 8. Save new score if build succeeded
+      # 8. Save new score
       # ----------------------------
       - name: Save updated mutation score
         if: success()
         run: |
           mkdir -p .github/mutation
           echo "${{ steps.pit.outputs.current_score }}" > .github/mutation/last_score.txt
-          echo " New mutation score saved."
+          echo " Saved updated mutation score."
 
       # ----------------------------
-      # 9. Trigger Rickroll on failure
+      # 9. Rickroll if failure
+      # (needs .github/actions/rickroll/action.yml)
       # ----------------------------
       - name: Rickroll (for fun)
         if: failure()
