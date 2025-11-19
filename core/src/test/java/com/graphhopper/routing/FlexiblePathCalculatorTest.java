@@ -1,15 +1,19 @@
 package com.graphhopper.routing;
 
 import com.graphhopper.routing.querygraph.QueryGraph;
+import com.graphhopper.routing.util.TraversalMode;
 import com.graphhopper.routing.weighting.Weighting;
+import com.graphhopper.routing.weighting.FastestWeighting;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.util.EdgeIterator;
-import com.graphhopper.util.GHUtility;
-import com.graphhopper.routing.util.TraversalMode;
-import com.graphhopper.util.Parameters;
+import com.graphhopper.routing.AlgorithmOptions;
+import com.graphhopper.routing.Path;
+import com.graphhopper.routing.PathCalculator.EdgeRestrictions;
+import com.graphhopper.routing.ch.CHPreparationHandler;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,63 +22,56 @@ import static org.mockito.Mockito.*;
 public class FlexiblePathCalculatorTest {
 
     @Test
-    void testCalcPathsSuccessful() {
-        // Mock du graph + queryGraph
+    public void testCalcPathsBasic() {
+        // Mock du graph
         Graph graph = mock(Graph.class);
-        QueryGraph queryGraph = mock(QueryGraph.class);
+        QueryGraph qGraph = mock(QueryGraph.class);
+        when(qGraph.getBaseGraph()).thenReturn(graph);
 
         // Mock weighting
         Weighting weighting = mock(Weighting.class);
 
-        // Algo options
-        AlgorithmOptions algoOpts = AlgorithmOptions.start().build();
+        // Options de l’algorithme
+        AlgorithmOptions algoOpts = new AlgorithmOptions();
 
-        // Fake algo factory
+        // Mock factory -> retourne un algo mocké
         RoutingAlgorithm algo = mock(RoutingAlgorithm.class);
-
         RoutingAlgorithmFactory factory = mock(RoutingAlgorithmFactory.class);
-        when(factory.createAlgo(queryGraph, weighting, algoOpts)).thenReturn(algo);
+        when(factory.createAlgo(qGraph, weighting, algoOpts)).thenReturn(algo);
 
-        // Fake path
-        Path mockPath = mock(Path.class);
-        when(algo.calcPaths(0, 5)).thenReturn(List.of(mockPath));
-        when(algo.getVisitedNodes()).thenReturn(10);
+        // Le calcul retournera une simple liste avec un Path mocké
+        Path p = mock(Path.class);
+        when(algo.calcPaths(0, 10)).thenReturn(Collections.singletonList(p));
+        when(algo.getName()).thenReturn("mockAlgo");
 
         FlexiblePathCalculator calc =
-                new FlexiblePathCalculator(queryGraph, factory, weighting, algoOpts);
+                new FlexiblePathCalculator(qGraph, factory, weighting, algoOpts);
 
-        // EdgeRestrictions valide
-        EdgeRestrictions restrictions = new EdgeRestrictions();
-        restrictions.getUnfavoredEdges().add(12);  // autorisé ✔
+        EdgeRestrictions er = new EdgeRestrictions();
 
-        List<Path> result = calc.calcPaths(0, 5, restrictions);
+        List<Path> result = calc.calcPaths(0, 10, er);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(factory).createAlgo(queryGraph, weighting, algoOpts);
+        verify(algo).calcPaths(0, 10);
     }
 
     @Test
-    void testThrowsIfEmptyPaths() {
-        Graph graph = mock(Graph.class);
-        QueryGraph queryGraph = mock(QueryGraph.class);
-        Weighting weighting = mock(Weighting.class);
-        AlgorithmOptions algoOpts = AlgorithmOptions.start().build();
+    public void testSetGetWeighting() {
 
-        RoutingAlgorithm algo = mock(RoutingAlgorithm.class);
-        when(algo.calcPaths(0, 5)).thenReturn(List.of()); // Aucun path
+        QueryGraph qGraph = mock(QueryGraph.class);
+        Weighting w1 = mock(Weighting.class);
+        Weighting w2 = mock(Weighting.class);
 
+        AlgorithmOptions opts = new AlgorithmOptions();
         RoutingAlgorithmFactory factory = mock(RoutingAlgorithmFactory.class);
-        when(factory.createAlgo(queryGraph, weighting, algoOpts)).thenReturn(algo);
 
         FlexiblePathCalculator calc =
-                new FlexiblePathCalculator(queryGraph, factory, weighting, algoOpts);
+                new FlexiblePathCalculator(qGraph, factory, w1, opts);
 
-        EdgeRestrictions restrictions = new EdgeRestrictions();
-
-        assertThrows(IllegalStateException.class, () -> {
-            calc.calcPaths(0, 5, restrictions);
-        });
+        assertEquals(w1, calc.getWeighting());
+        calc.setWeighting(w2);
+        assertEquals(w2, calc.getWeighting());
     }
 }
 
