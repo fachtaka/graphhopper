@@ -35,6 +35,14 @@
         </license>
     </licenses>
     <dependencies>
+
+        <dependency>
+             <groupId>org.pitest</groupId>
+             <artifactId>pitest-junit5-plugin</artifactId>
+             <version>1.2.3</version>
+             <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>com.graphhopper</groupId>
             <artifactId>graphhopper-web-api</artifactId>
@@ -165,20 +173,34 @@
                 </configuration>
             </plugin>
 
-        <plugin>
+<plugin>
     <groupId>org.pitest</groupId>
     <artifactId>pitest-maven</artifactId>
     <version>1.22.0</version>
+
     <configuration>
+        <testPlugin>junit5</testPlugin>
+
         <targetClasses>
             <param>com.graphhopper.*</param>
         </targetClasses>
+
         <targetTests>
-            <param>com.graphhopper.*Test</param>
+            <param>com.graphhopper.*</param>
         </targetTests>
+
         <threads>4</threads>
-        <mutationThreshold>0</mutationThreshold>
-        <coverageThreshold>0</coverageThreshold>
+
+        <mutators>
+            <mutator>ALL</mutator>
+        </mutators>
+
+        <outputFormats>
+            <param>HTML</param>
+            <param>XML</param>
+        </outputFormats>
+
+        <failWhenNoMutations>false</failWhenNoMutations>
     </configuration>
 </plugin>
 
