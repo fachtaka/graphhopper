@@ -1,0 +1,9 @@
+name: Rickroll
+description: Rickroll on failure
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        echo " Never gonna give you up "
+        echo "https://youtu.be/dQw4w9WgXcQ"
+
