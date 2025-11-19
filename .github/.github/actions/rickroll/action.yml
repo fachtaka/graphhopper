@@ -1,0 +1,10 @@
+name: Rickroll
+description: Play a Rickroll message when the job fails
+runs:
+  using: "composite"
+  steps:
+    - name: Rickroll log
+      run: |
+        echo " Never gonna give you up, never gonna let you down "
+        echo "https://youtu.be/dQw4w9WgXcQ"
+
