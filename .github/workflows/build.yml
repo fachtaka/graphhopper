@@ -1,18 +1,19 @@
-name: Build and Test
+name: Build, Test and Mutation Score Check
+
 on: push
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        java-version: [ 24, 25-ea ]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java-version }}
+          java-version: 17
           distribution: temurin
+
       - name: Cache Maven artifacts
         uses: actions/cache@v4
         with:
@@ -20,20 +21,37 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      - name: Cache node
-        uses: actions/cache@v4
-        with:
-          path: web-bundle/node
-          key: ${{ runner.os }}-node-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os}}-node-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: web-bundle/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/pom.xml', '**/package.json') }}
-          restore-keys: |
-            ${{ runner.os}}-node_modules-
-      - name: Build ${{ matrix.java-version }}
+
+      - name: Build & Run Tests
         run: mvn -B clean test
+
+      # --- Mutation Testing ---
+      - name: Run Pitest Mutation Testing
+        run: mvn -B org.pitest:pitest-maven:mutationCoverage
+
+      - name: Extract mutation score
+        id: mutation
+        run: |
+          score=$(grep -oP '"mutationScore":\s*\K[0-9]+' target/pit-reports/mutation-report.json)
+          echo "Score de mutation = $score"
+          echo "score=$score" >> $GITHUB_OUTPUT
+
+      - name: Compare mutation score with previous
+        run: |
+          if [ ! -f mutation_score.txt ]; then
+            echo "0" > mutation_score.txt
+          fi
+
+          ancien=$(cat mutation_score.txt)
+          echo "Score précédent : $ancien"
+          echo "Score actuel : ${{ steps.mutation.outputs.score }}"
+
+          if [ ${{ steps.mutation.outputs.score }} -lt $ancien ]; then
+            echo " Score de mutation en baisse. CI échoue."
+            exit 1
+          fi
+
+      - name: Update stored mutation score
+        if: success()
+        run: echo "${{ steps.mutation.outputs.score }}" > mutation_score.txt
 
