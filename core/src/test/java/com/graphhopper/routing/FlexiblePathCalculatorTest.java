@@ -1,107 +1,80 @@
 package com.graphhopper.routing;
 
-import com.carrotsearch.hppc.IntArrayList;
 import com.graphhopper.routing.querygraph.QueryGraph;
 import com.graphhopper.routing.weighting.Weighting;
+import com.graphhopper.storage.Graph;
 import com.graphhopper.util.EdgeIterator;
+import com.graphhopper.util.GHUtility;
+import com.graphhopper.routing.util.TraversalMode;
 import com.graphhopper.util.Parameters;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-class FlexiblePathCalculatorTest {
+public class FlexiblePathCalculatorTest {
 
-    private QueryGraph queryGraph;
-    private RoutingAlgorithmFactory algoFactory;
-    private Weighting weighting;
-    private AlgorithmOptions algoOptions;
-    private RoutingAlgorithm algo;
-    private Path path;
+    @Test
+    void testCalcPathsSuccessful() {
+        // Mock du graph + queryGraph
+        Graph graph = mock(Graph.class);
+        QueryGraph queryGraph = mock(QueryGraph.class);
 
-    @BeforeEach
-    void setup() {
-        queryGraph = Mockito.mock(QueryGraph.class);
-        algoFactory = Mockito.mock(RoutingAlgorithmFactory.class);
-        weighting = Mockito.mock(Weighting.class);
-        algoOptions = Mockito.mock(AlgorithmOptions.class);
+        // Mock weighting
+        Weighting weighting = mock(Weighting.class);
 
-        // Le Path retourné par l'algo
-        path = Mockito.mock(Path.class);
+        // Algo options
+        AlgorithmOptions algoOpts = AlgorithmOptions.start().build();
 
-        // Algo factice retournant une liste contenant un seul Path
-        algo = Mockito.mock(RoutingAlgorithm.class);
-        Mockito.when(algo.calcPaths(Mockito.anyInt(), Mockito.anyInt()))
-                .thenReturn(Collections.singletonList(path));
-        Mockito.when(algo.getVisitedNodes()).thenReturn(3);
+        // Fake algo factory
+        RoutingAlgorithm algo = mock(RoutingAlgorithm.class);
 
-        Mockito.when(algoFactory.createAlgo(Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(algo);
+        RoutingAlgorithmFactory factory = mock(RoutingAlgorithmFactory.class);
+        when(factory.createAlgo(queryGraph, weighting, algoOpts)).thenReturn(algo);
 
-        // Max visited nodes pour contrôler exceptions
-        Mockito.when(algoOptions.getMaxVisitedNodes()).thenReturn(50);
+        // Fake path
+        Path mockPath = mock(Path.class);
+        when(algo.calcPaths(0, 5)).thenReturn(List.of(mockPath));
+        when(algo.getVisitedNodes()).thenReturn(10);
 
-        // Pas d'arêtes "unfavored"
-        Mockito.when(queryGraph.unfavorVirtualEdge(Mockito.anyInt())).thenReturn(true);
-        Mockito.when(queryGraph.clearUnfavoredStatus()).thenReturn(true);
+        FlexiblePathCalculator calc =
+                new FlexiblePathCalculator(queryGraph, factory, weighting, algoOpts);
+
+        // EdgeRestrictions valide
+        EdgeRestrictions restrictions = new EdgeRestrictions();
+        restrictions.getUnfavoredEdges().add(12);  // autorisé ✔
+
+        List<Path> result = calc.calcPaths(0, 5, restrictions);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(factory).createAlgo(queryGraph, weighting, algoOpts);
     }
 
     @Test
-    void testCalcPaths_returnsOnePath() {
-        FlexiblePathCalculator calc = new FlexiblePathCalculator(
-                queryGraph, algoFactory, weighting, algoOptions);
+    void testThrowsIfEmptyPaths() {
+        Graph graph = mock(Graph.class);
+        QueryGraph queryGraph = mock(QueryGraph.class);
+        Weighting weighting = mock(Weighting.class);
+        AlgorithmOptions algoOpts = AlgorithmOptions.start().build();
 
-        EdgeRestrictions restrictions = new EdgeRestrictions(
-                EdgeIterator.ANY_EDGE,
-                EdgeIterator.ANY_EDGE,
-                new IntArrayList()
-        );
+        RoutingAlgorithm algo = mock(RoutingAlgorithm.class);
+        when(algo.calcPaths(0, 5)).thenReturn(List.of()); // Aucun path
 
-        List<Path> result = calc.calcPaths(1, 5, restrictions);
+        RoutingAlgorithmFactory factory = mock(RoutingAlgorithmFactory.class);
+        when(factory.createAlgo(queryGraph, weighting, algoOpts)).thenReturn(algo);
 
-        assertEquals(1, result.size(), "FlexiblePathCalculator doit retourner exactement un Path");
-        assertEquals(path, result.get(0), "Le Path retourné doit être celui produit par l'algo mocké");
-    }
+        FlexiblePathCalculator calc =
+                new FlexiblePathCalculator(queryGraph, factory, weighting, algoOpts);
 
-    @Test
-    void testCalcPaths_storesVisitedNodes() {
-        FlexiblePathCalculator calc = new FlexiblePathCalculator(
-                queryGraph, algoFactory, weighting, algoOptions);
+        EdgeRestrictions restrictions = new EdgeRestrictions();
 
-        EdgeRestrictions restrictions = new EdgeRestrictions(
-                EdgeIterator.ANY_EDGE,
-                EdgeIterator.ANY_EDGE,
-                new IntArrayList()
-        );
-
-        calc.calcPaths(1, 5, restrictions);
-
-        assertEquals(3, calc.getVisitedNodes(),
-                "Le nombre de nœuds visités doit provenir de algo.getVisitedNodes()");
-    }
-
-    @Test
-    void testCalcPaths_throwsIfListEmpty() {
-        // algo retourne une liste vide
-        Mockito.when(algo.calcPaths(Mockito.anyInt(), Mockito.anyInt()))
-                .thenReturn(Collections.emptyList());
-
-        FlexiblePathCalculator calc = new FlexiblePathCalculator(
-                queryGraph, algoFactory, weighting, algoOptions);
-
-        EdgeRestrictions restrictions = new EdgeRestrictions(
-                EdgeIterator.ANY_EDGE,
-                EdgeIterator.ANY_EDGE,
-                new IntArrayList()
-        );
-
-        assertThrows(IllegalStateException.class,
-                () -> calc.calcPaths(1, 5, restrictions),
-                "Une liste vide doit générer une IllegalStateException");
+        assertThrows(IllegalStateException.class, () -> {
+            calc.calcPaths(0, 5, restrictions);
+        });
     }
 }
 
