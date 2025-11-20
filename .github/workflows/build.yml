@@ -44,17 +44,17 @@ jobs:
       - name: Extract mutation score
         id: pit
         run: |
-           REPORT=$(find core -type f -path "*/pit-reports/*/summary.xml" | head -n 1)
+          REPORT=$(find core -type f -path "*/pit-reports/*/summary.xml" | head -n 1)
 
           if [ -z "$REPORT" ]; then
-            echo "️ No PIT summary.xml found. Setting score to 0."
+            echo "No PIT summary.xml found. Setting score to 0."
             CURR=0
           else
             CURR=$(grep -oPm1 "(?<=<score>)[^<]+" "$REPORT")
           fi
 
           echo "current_score=$CURR" >> "$GITHUB_OUTPUT"
-          echo " Current mutation score: $CURR %"
+          echo "Current mutation score: $CURR %"
 
       # ----------------------------
       # 6. Retrieve previous score
