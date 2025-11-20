@@ -34,7 +34,9 @@ jobs:
       # 4. Run PIT Mutation Testing (core module)
       # ----------------------------
       - name: Run PIT Mutation Testing (core module only)
-        run: mvn clean install -DskipTests && mvn -pl core org.pitest:pitest-maven:mutationCoverage
+        run: |
+          mvn -q clean install -DskipTests
+          mvn -q -pl core org.pitest:pitest-maven:mutationCoverage
 
       # ----------------------------
       # 5. Extract mutation score
@@ -42,20 +44,16 @@ jobs:
       - name: Extract mutation score
         id: pit
         run: |
-          # Locate PIT mutations.xml report
           REPORT=$(find core -type f -name "mutations.xml" | head -n 1)
 
           if [ -z "$REPORT" ]; then
-            echo "No mutations.xml found. Setting score to 0."
+            echo "No mutations.xml found. Score = 0"
             CURR=0
           else
             echo "Using report: $REPORT"
 
-            # Count total mutants (# of <mutation> entries)
-            TOTAL=$(grep -o "<mutation " "$REPORT" | wc -l)
-
-            # Count killed mutants from <killed> tags
-            KILLED=$(grep -oPm100 "(?<=<killed>)[0-9]+" "$REPORT" | paste -sd+ - | bc)
+            TOTAL=$(grep -c "<mutation " "$REPORT")
+            KILLED=$(grep -c "status='KILLED'" "$REPORT")
 
             if [ "$TOTAL" -eq 0 ]; then
               CURR=0
@@ -66,7 +64,7 @@ jobs:
 
           echo "current_score=$CURR" >> "$GITHUB_OUTPUT"
           echo "Current mutation score: $CURR %"
-
+      
       # ----------------------------
       # 6. Retrieve previous score
       # ----------------------------
@@ -83,10 +81,9 @@ jobs:
           echo "Previous mutation score: $PREV %"
 
       # ----------------------------
-      # 7. Compare scores (FAIL if regression only)
+      # 7. Compare scores (FAIL if regression)
       # ----------------------------
       - name: Compare mutation scores
-        id: comparison
         run: |
           CUR=${{ steps.pit.outputs.current_score }}
           PREV=${{ steps.old.outputs.previous_score }}
@@ -95,7 +92,6 @@ jobs:
           echo "  - Current score : $CUR %"
           echo "  - Previous score: $PREV %"
 
-          # Fail ONLY if score regressed
           if [ "$CUR" -lt "$PREV" ]; then
             echo " Mutation score regressed ($CUR < $PREV)"
             exit 1
