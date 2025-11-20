@@ -206,10 +206,15 @@
                 <configuration>
                     <testPlugin>junit5</testPlugin>
 
-<targetClasses>
-    <param>com.graphhopper.routing.weighting.SpeedWeighting</param>
-    <param>com.graphhopper.routing.*</param>
+<!-- TARGET = SpeedWeighting --> 
+<targetClasses> 
+<param>com.graphhopper.routing.weighting.SpeedWeighting*</param> 
 </targetClasses>
+
+<!-- TEST FILES -->
+ <targetTests>
+ <param>com.graphhopper.routing.weighting.*Test</param>
+ </targetTests>
 
                     <threads>4</threads>
                     <mutators>
