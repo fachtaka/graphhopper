@@ -193,20 +193,27 @@
 <plugin>
     <groupId>org.pitest</groupId>
     <artifactId>pitest-maven</artifactId>
-    <version>1.22.0</version>
+    <version>1.15.8</version>
     <configuration>
-        <!-- Ensures argLine resolves correctly -->
-        <jvmArgs>
-            <jvmArg>${argLine}</jvmArg>
-        </jvmArgs>
+        <testPlugin>junit5</testPlugin>
+<targetClasses>
+    <param>com.graphhopper.routing.weighting.SpeedWeighting*</param>
+    <param>com.graphhopper.routing.*Dijkstra*</param>
+</targetClasses>
 
-        <!-- Prevent NoSuchFileException -->
+<targetTests>
+    <param>com.graphhopper.routing.weighting.*Test</param>
+    <param>com.graphhopper.routing.*DijkstraTest</param>
+</targetTests>
+        <threads>4</threads>
+        <mutators>
+            <mutator>ALL</mutator>
+        </mutators>
+        <outputFormats>
+            <param>HTML</param>
+            <param>XML</param>
+        </outputFormats>
         <failWhenNoMutations>false</failWhenNoMutations>
-
-        <!-- Keep PIT running inside GitHub runners -->
-        <threads>2</threads>
-        <timeoutFactor>3</timeoutFactor>
-        <timeoutConst>2000</timeoutConst>
     </configuration>
 </plugin>
 
