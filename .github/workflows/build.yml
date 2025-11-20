@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
 
       # ----------------------------
-      # 3. Build project & run normal tests
+      # 3. Build project & run tests
       # ----------------------------
       - name: Build project & run tests
         run: mvn -B -q clean test
@@ -42,15 +42,26 @@ jobs:
       - name: Extract mutation score
         id: pit
         run: |
-          # Locate PIT summary.xml
-          REPORT=$(find core -type f -path "*/target/pit-reports/*/summary.xml" | head -n 1)
+          # Locate PIT mutations.xml report
+          REPORT=$(find core -type f -name "mutations.xml" | head -n 1)
 
           if [ -z "$REPORT" ]; then
-            echo "No PIT summary.xml found. Setting score to 0."
+            echo "No mutations.xml found. Setting score to 0."
             CURR=0
           else
-            # Extract <score>XX</score>
-            CURR=$(grep -oPm1 "(?<=<score>)[^<]+" "$REPORT")
+            echo "Using report: $REPORT"
+
+            # Count total mutants (# of <mutation> entries)
+            TOTAL=$(grep -o "<mutation " "$REPORT" | wc -l)
+
+            # Count killed mutants from <killed> tags
+            KILLED=$(grep -oPm100 "(?<=<killed>)[0-9]+" "$REPORT" | paste -sd+ - | bc)
+
+            if [ "$TOTAL" -eq 0 ]; then
+              CURR=0
+            else
+              CURR=$((KILLED * 100 / TOTAL))
+            fi
           fi
 
           echo "current_score=$CURR" >> "$GITHUB_OUTPUT"
@@ -86,11 +97,11 @@ jobs:
 
           # Fail ONLY if score regressed
           if [ "$CUR" -lt "$PREV" ]; then
-            echo "❌ Mutation score regressed ($CUR < $PREV)"
+            echo " Mutation score regressed ($CUR < $PREV)"
             exit 1
           fi
 
-          echo "✅ Mutation score OK (no regression)."
+          echo " Mutation score OK (no regression)."
 
       # ----------------------------
       # 8. Save updated score
@@ -103,7 +114,7 @@ jobs:
           echo "Saved updated mutation score."
 
       # ----------------------------
-      # 9. Rickroll (if failure)
+      # 9. Rickroll if failure
       # ----------------------------
       - name: Rickroll (for fun)
         if: failure()
