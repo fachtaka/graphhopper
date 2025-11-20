@@ -44,7 +44,7 @@ jobs:
       - name: Extract mutation score
         id: pit
         run: |
-          REPORT=$(find . -type f -path "*/pit-reports/*/summary.xml" | head -n 1)
+           REPORT=$(find core -type f -path "*/pit-reports/*/summary.xml" | head -n 1)
 
           if [ -z "$REPORT" ]; then
             echo "️ No PIT summary.xml found. Setting score to 0."
