@@ -24,7 +24,7 @@
         <netbeans.hint.license>apache20</netbeans.hint.license>
         <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
         <builddate>${maven.build.timestamp}</builddate>
-        <!-- IMPORTANT : argLine supprimé ! -->
+        <argLine></argLine>
     </properties>
 
     <licenses>
