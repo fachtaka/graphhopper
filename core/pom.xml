@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+k<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -7,10 +8,12 @@
     <name>GraphHopper Core</name>
     <version>11.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+
     <description>
         GraphHopper is a fast and memory efficient Java road routing engine
         working seamlessly with OpenStreetMap data.
     </description>
+
     <parent>
         <groupId>com.graphhopper</groupId>
         <artifactId>graphhopper-parent</artifactId>
@@ -19,28 +22,34 @@
 
     <properties>
         <netbeans.hint.license>apache20</netbeans.hint.license>
-        <!-- Make sure that we use the same format as for Helper.createFormatter.
-             We cannot force the UTC TimeZone so it will just throw away the local offset or is this
-             fixed due to https://issues.apache.org/jira/browse/MNG-5647 ?
-        -->
         <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
         <builddate>${maven.build.timestamp}</builddate>
+        <!-- IMPORTANT : argLine supprimé ! -->
     </properties>
+
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
             <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
-            <comments>A business-friendly OSS license</comments>
         </license>
     </licenses>
+
     <dependencies>
 
+        <!-- PIT + JUnit 5 -->
         <dependency>
-             <groupId>org.pitest</groupId>
-             <artifactId>pitest-junit5-plugin</artifactId>
-             <version>1.2.3</version>
-             <scope>test</scope>
+            <groupId>org.pitest</groupId>
+            <artifactId>pitest-junit5-plugin</artifactId>
+            <version>1.2.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.javafaker</groupId>
+            <artifactId>javafaker</artifactId>
+            <version>1.0.2</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -48,19 +57,32 @@
             <artifactId>graphhopper-web-api</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.carrotsearch</groupId>
             <artifactId>hppc</artifactId>
         </dependency>
+
+        <!-- Mockito -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.19.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Required by GraphHopper -->
         <dependency>
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>
             <version>3.1.9</version>
         </dependency>
+
         <dependency>
             <groupId>org.locationtech.jts</groupId>
             <artifactId>jts-core</artifactId>
         </dependency>
+
         <!-- Jackson -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -78,7 +100,8 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
         </dependency>
-        <!-- for using CGIAR: elevation data importing via tif files-->
+
+        <!-- Elevation -->
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>xmlgraphics-commons</artifactId>
@@ -90,11 +113,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>de.westnordost</groupId>
             <artifactId>osm-legal-default-speeds-jvm</artifactId>
             <version>1.4</version>
-            <!-- to avoid problems force older but same kotlin like we use for client-hc -->
             <exclusions>
                 <exclusion>
                     <groupId>org.jetbrains.kotlin</groupId>
@@ -106,7 +129,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- use same kotlin version as okhttp uses in client-hc -->
+
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
@@ -118,28 +141,24 @@
             <artifactId>osmosis-osm-binary</artifactId>
             <version>0.48.3</version>
         </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-core</artifactId>
-    <version>5.11.0</version>
-    <scope>test</scope>
-</dependency>
 
     </dependencies>
 
     <build>
+
         <pluginManagement>
             <plugins>
-                <!-- create jar with test classes to be reused in other projects -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
@@ -162,6 +181,8 @@
         </pluginManagement>
 
         <plugins>
+
+            <!-- Git commit info -->
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
@@ -172,54 +193,46 @@
                         </goals>
                     </execution>
                 </executions>
-
                 <configuration>
                     <dotGitDirectory>${parent.basedir}/.git</dotGitDirectory>
-                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
-                    <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
                 </configuration>
             </plugin>
 
-        <plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-surefire-plugin</artifactId>
-    <version>3.1.2</version>
-    <configuration>
-        <!-- Required so PIT can reuse the same JVM settings -->
-        <argLine>@{argLine}</argLine>
-    </configuration>
-</plugin>
+            <!-- MUTATION TESTING : Working PIT config -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>1.15.8</version>
+                <configuration>
+                    <testPlugin>junit5</testPlugin>
 
-<plugin>
-    <groupId>org.pitest</groupId>
-    <artifactId>pitest-maven</artifactId>
-    <version>1.15.8</version>
-    <configuration>
-        <testPlugin>junit5</testPlugin>
-<targetClasses>
-    <param>com.graphhopper.routing.weighting.SpeedWeighting*</param>
-    <param>com.graphhopper.routing.*Dijkstra*</param>
-</targetClasses>
+                    <!-- TARGET = SpeedWeighting -->
+                    <targetClasses>
+                        <param>com.graphhopper.routing.weighting.SpeedWeighting*</param>
+                    </targetClasses>
 
-<targetTests>
-    <param>com.graphhopper.routing.weighting.*Test</param>
-    <param>com.graphhopper.routing.*DijkstraTest</param>
-</targetTests>
-        <threads>4</threads>
-        <mutators>
-            <mutator>ALL</mutator>
-        </mutators>
-        <outputFormats>
-            <param>HTML</param>
-            <param>XML</param>
-        </outputFormats>
-        <failWhenNoMutations>false</failWhenNoMutations>
-    </configuration>
-</plugin>
+                    <!-- TEST FILES -->
+                    <targetTests>
+                        <param>com.graphhopper.routing.weighting.*Test</param>
+                    </targetTests>
+
+                    <threads>4</threads>
+                    <mutators>
+                        <mutator>ALL</mutator>
+                    </mutators>
+
+                    <outputFormats>
+                        <param>HTML</param>
+                        <param>XML</param>
+                    </outputFormats>
+
+                    <!-- To prevent build failure if 0 mutations -->
+                    <failWhenNoMutations>false</failWhenNoMutations>
+                </configuration>
+            </plugin>
 
         </plugins>
 
-        <!-- make version available at runtime via version file -->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -240,5 +253,8 @@
                 </excludes>
             </resource>
         </resources>
+
     </build>
+
 </project>
+
