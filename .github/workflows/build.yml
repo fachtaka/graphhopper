@@ -1,4 +1,4 @@
-name: Quality Gate - Build & Mutation Testing
+name: Quality Gate – Build & Mutation Testing
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
 
       # ----------------------------
-      # 3. Build & run normal tests
+      # 3. Build project & run tests
       # ----------------------------
       - name: Build project & run tests
         run: mvn -B -q clean test
@@ -33,10 +33,8 @@ jobs:
       # ----------------------------
       # 4. Run PIT Mutation Testing (core module)
       # ----------------------------
-
       - name: Run PIT Mutation Testing (core module only)
         run: mvn clean install -DskipTests && mvn -pl core org.pitest:pitest-maven:mutationCoverage
-
 
       # ----------------------------
       # 5. Extract mutation score
@@ -45,14 +43,12 @@ jobs:
         id: pit
         run: |
           REPORT=$(find core -type f -path "*/pit-reports/*/summary.xml" | head -n 1)
-
           if [ -z "$REPORT" ]; then
             echo "No PIT summary.xml found. Setting score to 0."
             CURR=0
           else
             CURR=$(grep -oPm1 "(?<=<score>)[^<]+" "$REPORT")
           fi
-
           echo "current_score=$CURR" >> "$GITHUB_OUTPUT"
           echo "Current mutation score: $CURR %"
 
@@ -67,30 +63,28 @@ jobs:
           else
             PREV=0
           fi
-
           echo "previous_score=$PREV" >> "$GITHUB_OUTPUT"
-          echo " Previous mutation score: $PREV %"
+          echo "Previous mutation score: $PREV %"
 
-     # ----------------------------
-     # 7. Compare mutation scores (ONLY fail if score decreases)
-     # ----------------------------
-     - name: Compare mutation scores
-       id: comparison
-       run: |
-         CUR=${{ steps.pit.outputs.current_score }}
-         PREV=${{ steps.old.outputs.previous_score }}
-    
-       echo "Comparing mutation scores..."
-       echo "  - Current score :  $CUR %"
-       echo "  - Previous score:  $PREV %"
-    
-       # Fail ONLY if score regressed
-       if [ "$CUR" -lt "$PREV" ]; then
-         echo " Mutation score regressed ($CUR < $PREV)"
-         exit 1
-       fi
-    
-       echo " Mutation score OK (no regression)."
+      # ----------------------------
+      # 7. Compare scores (FAIL if regression only)
+      # ----------------------------
+      - name: Compare mutation scores
+        id: comparison
+        run: |
+          CUR=${{ steps.pit.outputs.current_score }}
+          PREV=${{ steps.old.outputs.previous_score }}
+
+          echo "Comparing mutation scores..."
+          echo "  - Current score : $CUR %"
+          echo "  - Previous score: $PREV %"
+
+          if [ "$CUR" -lt "$PREV" ]; then
+            echo " Mutation score regressed ($CUR < $PREV)"
+            exit 1
+          fi
+
+          echo " Mutation score OK (no regression)."
 
       # ----------------------------
       # 8. Save new score
@@ -100,11 +94,9 @@ jobs:
         run: |
           mkdir -p .github/mutation
           echo "${{ steps.pit.outputs.current_score }}" > .github/mutation/last_score.txt
-          echo " Saved updated mutation score."
 
       # ----------------------------
       # 9. Rickroll if failure
-      # (needs .github/actions/rickroll/action.yml)
       # ----------------------------
       - name: Rickroll (for fun)
         if: failure()
