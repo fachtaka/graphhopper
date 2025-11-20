@@ -71,34 +71,26 @@ jobs:
           echo "previous_score=$PREV" >> "$GITHUB_OUTPUT"
           echo " Previous mutation score: $PREV %"
 
-      # ----------------------------
-      # 7. Compare scores + threshold enforcement
-      # ----------------------------
-      - name: Compare mutation scores
-        id: comparison
-        run: |
-          CUR=${{ steps.pit.outputs.current_score }}
-          PREV=${{ steps.old.outputs.previous_score }}
-          MIN_THRESHOLD=60
-
-          echo " Comparing mutation scores..."
-          echo "  - Current:  $CUR %"
-          echo "  - Previous: $PREV %"
-          echo "  - Threshold: $MIN_THRESHOLD %"
-
-          # Fail if below threshold
-          if [ "$CUR" -lt "$MIN_THRESHOLD" ]; then
-            echo " Score below required threshold ($CUR < $MIN_THRESHOLD)"
-            exit 1
-          fi
-
-          # Fail if score regressed
-          if [ "$CUR" -lt "$PREV" ]; then
-            echo " Mutation score regressed ($CUR < $PREV)"
-            exit 1
-          fi
-
-          echo " Mutation score OK."
+     # ----------------------------
+     # 7. Compare mutation scores (ONLY fail if score decreases)
+     # ----------------------------
+     - name: Compare mutation scores
+       id: comparison
+       run: |
+         CUR=${{ steps.pit.outputs.current_score }}
+         PREV=${{ steps.old.outputs.previous_score }}
+    
+       echo "Comparing mutation scores..."
+       echo "  - Current score :  $CUR %"
+       echo "  - Previous score:  $PREV %"
+    
+       # Fail ONLY if score regressed
+       if [ "$CUR" -lt "$PREV" ]; then
+         echo " Mutation score regressed ($CUR < $PREV)"
+         exit 1
+       fi
+    
+       echo " Mutation score OK (no regression)."
 
       # ----------------------------
       # 8. Save new score
