@@ -209,7 +209,7 @@
 <!-- TARGET = SpeedWeighting --> 
 <targetClasses>
     <param>com.graphhopper.routing.weighting.SpeedWeighting*</param>
-    <param>com.graphhopper.routing.weighting.FastestWeighting*</param>
+    <param>com.graphhopper.routing.weighting.ShortestWeighting*</param>
 </targetClasses>
 
 <!-- TEST FILES -->
