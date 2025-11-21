@@ -1,5 +1,8 @@
 package com.graphhopper.routing.weighting;
 
+import com.carrotsearch.hppc.IntSet;
+import com.graphhopper.coll.GHIntHashSet;
+import com.graphhopper.util.EdgeIteratorState;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -8,35 +11,49 @@ import static org.junit.jupiter.api.Assertions.*;
 public class AvoidEdgesWeightingMockitoTest {
 
     @Test
-    void testAvoidedEdgeHasHugeWeight() {
+    void testAvoidedEdgeReceivesPenalty() {
 
-        // --- MOCKS ---
-        Weighting baseWeighting = Mockito.mock(Weighting.class);
+        // Base weighting (mocked)
+        Weighting base = Mockito.mock(Weighting.class);
 
-        // simulate base weighting value
-        Mockito.when(baseWeighting.calcEdgeWeight(5, false)).thenReturn(10.0);
+        // Mock an edge
+        EdgeIteratorState edge = Mockito.mock(EdgeIteratorState.class);
+        Mockito.when(edge.getEdge()).thenReturn(5);
 
-        // test AvoidEdgesWeighting
-        AvoidEdgesWeighting weighting = new AvoidEdgesWeighting(baseWeighting);
-        weighting.addEdgeToAvoid(5); // edge 5 is avoided
+        // Base weight for the edge
+        Mockito.when(base.calcEdgeWeight(edge, false)).thenReturn(10.0);
 
-        double w = weighting.calcEdgeWeight(5, false);
+        // Create AvoidEdgesWeighting
+        AvoidEdgesWeighting w = new AvoidEdgesWeighting(base);
 
-        assertTrue(w >= 1e6, "Avoided edge should have huge weight");
+        // Avoid edge 5
+        IntSet avoided = new GHIntHashSet();
+        avoided.add(5);
+        w.setAvoidedEdges(avoided);
+
+        double weight = w.calcEdgeWeight(edge, false);
+
+        // Because edge 5 is avoided, weight = baseWeight * penaltyFactor (default = 5.0)
+        assertEquals(50.0, weight, 0.0001);
     }
 
     @Test
-    void testNormalEdgeUsesBaseWeighting() {
+    void testNormalEdgeUsesBaseWeight() {
 
-        Weighting baseWeighting = Mockito.mock(Weighting.class);
+        Weighting base = Mockito.mock(Weighting.class);
 
-        Mockito.when(baseWeighting.calcEdgeWeight(7, false)).thenReturn(3.5);
+        // Mock a normal edge
+        EdgeIteratorState edge = Mockito.mock(EdgeIteratorState.class);
+        Mockito.when(edge.getEdge()).thenReturn(7);
 
-        AvoidEdgesWeighting weighting = new AvoidEdgesWeighting(baseWeighting);
+        Mockito.when(base.calcEdgeWeight(edge, false)).thenReturn(3.5);
 
-        double w = weighting.calcEdgeWeight(7, false);
+        AvoidEdgesWeighting w = new AvoidEdgesWeighting(base);
 
-        assertEquals(3.5, w, 0.0001, "Non-avoided edge should use base weighting");
+        // No avoided edges → weight = base weight
+        double weight = w.calcEdgeWeight(edge, false);
+
+        assertEquals(3.5, weight, 0.0001);
     }
 }
 
